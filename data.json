@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "data": {
+    "routes": [],
+    "tools": [],
+    "mcpConfig": {
+      "name": "WEB MCP Server",
+      "version": "1.0.0"
+    },
+    "initScript": ""
+  }
+}

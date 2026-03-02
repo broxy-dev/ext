@@ -1,0 +1,17 @@
+{
+  "name": "broxy-ext",
+  "version": "2.0.0",
+  "description": "Broxy - 将任意网页转换为 API 和 MCP 服务",
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c && node scripts/generate-loader.js",
+    "build:watch": "rollup -c -w",
+    "dev": "rollup -c -w",
+    "generate-loader": "node scripts/generate-loader.js"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "rollup": "^4.9.6"
+  }
+}
