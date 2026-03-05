@@ -51,6 +51,7 @@ broxy-ext/
 ├── extension/              # Chrome Extension build
 │   ├── entrypoints/
 │   │   └── content.ts      # Content script entry (WXT format)
+│   ├── public/icon/        # Extension icons (16/32/48/128.png)
 │   └── wxt.config.ts       # WXT configuration
 ├── dist/                   # Build intermediate files
 └── .output/                # Extension build output
