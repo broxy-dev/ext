@@ -1,10 +1,14 @@
 import resolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default {
-  input: 'src/main.js',
+  input: join(__dirname, '../shared/main.js'),
   output: {
-    file: 'dist/broxy.js',
+    file: join(__dirname, '../dist/broxy.js'),
     format: 'iife',
     name: 'Broxy'
   },

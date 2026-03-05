@@ -4,14 +4,16 @@
   "description": "Broxy - 将任意网页转换为 API 和 MCP 服务",
   "type": "module",
   "scripts": {
-    "build": "rollup -c && node scripts/generate-loader.js",
-    "build:watch": "rollup -c -w",
-    "dev": "rollup -c -w",
-    "generate-loader": "node scripts/generate-loader.js"
+    "dev": "wxt dev -c extension/wxt.config.ts",
+    "build": "npm run build:us && npm run build:ext",
+    "build:us": "rollup -c userscript/rollup.config.js && node userscript/scripts/generate-loader.js",
+    "build:ext": "wxt build -c extension/wxt.config.ts",
+    "build:ext:firefox": "wxt build -c extension/wxt.config.ts -b firefox"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
-    "rollup": "^4.9.6"
+    "rollup": "^4.9.6",
+    "wxt": "^0.19.9"
   }
 }

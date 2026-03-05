@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["shared/*"]
+    },
+    "types": ["chrome"]
+  },
+  "include": [
+    "shared/**/*",
+    "extension/**/*",
+    "userscript/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".output"
+  ]
+}

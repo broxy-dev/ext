@@ -4,10 +4,10 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const distPath = path.join(__dirname, '../dist/broxy.js');
+const distPath = path.join(__dirname, '../../dist/broxy.js');
 const templatePath = path.join(__dirname, 'tampermonkey-template.js');
 const dataPath = path.join(__dirname, '../data.json');
-const outputPath = path.join(__dirname, '../tampermonkey-loader.js');
+const outputPath = path.join(__dirname, '../../tampermonkey-loader.js');
 
 if (!fs.existsSync(distPath)) {
   console.error('Error: dist/broxy.js not found. Please run rollup first.');

@@ -4,21 +4,26 @@ Guidelines for agentic coding agents working in this repository.
 
 ## Project Overview
 
-Broxy Extension - A browser userscript that converts any webpage into API and MCP services via WebSocket bridge to Cloudflare Worker.
+Broxy Extension - A dual-build browser extension that converts any webpage into API and MCP services via WebSocket bridge to Cloudflare Worker. Supports both Tampermonkey userscript and Chrome Extension (Manifest V3) outputs.
 
 ## Build Commands
 
 ```bash
-npm install          # Install dependencies
-npm run build        # Build (rollup + generate loader)
-npm run dev          # Development mode (watch for changes)
-npm run generate-loader  # Generate tampermonkey loader only
+npm install              # Install dependencies
+npm run build            # Build all (userscript + extension)
+npm run build:us         # Build Tampermonkey userscript only
+npm run build:ext        # Build Chrome Extension only
+npm run build:ext:firefox # Build Firefox Extension
+npm run dev              # Extension dev mode with HMR
 ```
 
-## Build Output
+## Build Outputs
 
-- `dist/broxy.js` - Bundled core code (IIFE format)
-- `tampermonkey-loader.js` - Final userscript for Tampermonkey
+| Product | Output Path | Usage |
+|---------|-------------|-------|
+| Userscript | `tampermonkey-loader.js` | Install to Tampermonkey |
+| Chrome Extension | `.output/chrome-mv3/` | Chrome load unpacked |
+| Intermediate | `dist/broxy.js` | Bundled core code (IIFE) |
 
 ## Testing
 
@@ -28,16 +33,40 @@ No test framework configured. Consider Vitest or Node's built-in test runner.
 
 No linter or type checker configured. Consider adding ESLint with `@eslint/js`.
 
+## Directory Structure
+
+```
+broxy-ext/
+├── shared/                 # Shared core code (used by both builds)
+│   ├── core/               # router.js, bridge-client.js, request-handler.js
+│   ├── bridge/             # float-button.js, bridge-host.js
+│   ├── endpoints/          # index.js, routes.js, mcp-tools.js
+│   ├── utils/              # helpers.js, logger.js, config-manager.js, swagger.js
+│   ├── config.js           # Configuration constants
+│   └── main.js             # Main entry logic
+├── userscript/             # Tampermonkey userscript build
+│   ├── scripts/            # Build scripts (generate-loader.js, template)
+│   ├── data.json           # Default config data
+│   └── rollup.config.js    # Rollup configuration
+├── extension/              # Chrome Extension build
+│   ├── entrypoints/
+│   │   └── content.ts      # Content script entry (WXT format)
+│   └── wxt.config.ts       # WXT configuration
+├── dist/                   # Build intermediate files
+└── .output/                # Extension build output
+```
+
 ## Code Style Guidelines
 
 ### Module System
 
 - Use **ES Modules** (ESM) only (`"type": "module"` in package.json)
 - Always include `.js` extension in imports: `import { foo } from './bar.js';`
+- Content script uses `defineContentScript()` from WXT
 
 ### File Headers
 
-Each file starts with a brief comment: `// 路由匹配系统`
+Each file starts with a brief comment: `// WebSocket 连接管理`
 
 ### Naming Conventions
 
@@ -119,23 +148,24 @@ Object.assign(element.style, { position: 'fixed', width: '48px' });
 element.classList.add('bb-dragging');
 ```
 
-## Directory Structure
+### Content Script (WXT)
 
-```
-src/
-├── config.js           # Configuration constants
-├── main.js             # Entry point
-├── core/               # router.js, bridge-client.js, request-handler.js
-├── endpoints/          # index.js, routes.js, mcp-tools.js
-├── bridge/             # float-button.js, bridge-host.js
-└── utils/              # helpers.js, logger.js, config-manager.js, swagger.js
+```typescript
+export default defineContentScript({
+  matches: ['https://*/*', 'http://*/*'],
+  runAt: 'document_end',
+  main() {
+    // Import from shared/ and execute
+  },
+});
 ```
 
 ## Important Notes
 
-1. **No TypeScript** - Plain JavaScript only. No type annotations.
+1. **Shared Code** - All core logic lives in `shared/`. Both builds import from here.
 2. **Browser Environment** - Use `window`, `document`, `localStorage`, `WebSocket`, `crypto.randomUUID()`.
 3. **No Comments** - Do not add comments unless explicitly requested.
-4. **IIFE Bundle** - Final output is IIFE for Tampermonkey. Entry: `src/main.js`.
-5. **No Runtime Dependencies** - Only build-time devDependencies. No npm packages.
-6. **Handler Strings** - Handlers stored as strings, executed via `new Function()`.
+4. **No Runtime Dependencies** - Only build-time devDependencies (rollup, wxt).
+5. **Handler Strings** - Handlers stored as strings, executed via `new Function()`.
+6. **Dual Build** - Code must work in both Tampermonkey and Chrome Extension contexts.
+7. **localStorage** - Using localStorage (not chrome.storage) for simplicity and compatibility.
