@@ -13,57 +13,87 @@ Convert any webpage into API and MCP (Model Context Protocol) services. Bundled 
 - Monaco Editor for handler code editing
 - Data import/export
 
+## Installation
+
+### Browser Extension (Recommended)
+
+Install from Edge Add-ons: [Broxy](https://microsoftedge.microsoft.com/addons/detail/broxy/kbbobefcojhkfldidakefeeggjgldbjf)
+
+> Also compatible with Chrome and other Chromium-based browsers.
+
+### Userscript (Tampermonkey)
+
+Build from source and manually install:
+
+```bash
+npm install
+npm run build
+```
+
+Then copy `tampermonkey-loader.js` content to a new Tampermonkey script.
+
 ## Directory Structure
 
 ```
-ext/
-├── src/                      # Source code
-│   ├── config.js            # Configuration
-│   ├── main.js              # Entry point
-│   ├── endpoints/           # API endpoints
-│   │   ├── index.js        # Endpoint registry
-│   │   ├── mcp-tools.js    # MCP tools
-│   │   └── routes.js       # HTTP routes
-│   ├── core/                # Core functionality
-│   │   ├── router.js       # Route system
-│   │   └── bridge-client.js # WebSocket client
-│   ├── bridge/              # UI components
-│   │   ├── float-button.js # Floating button
-│   │   └── bridge-host.js  # iframe management
-│   └── utils/               # Utilities
-│       ├── helpers.js      # Helper functions
-│       ├── logger.js       # Logging
-│       └── config-manager.js # Config persistence
-├── dist/                    # Build output
-│   └── broxy.js            # Bundled script
-├── scripts/                 # Build scripts
-│   ├── generate-loader.js  # Generate userscript
-│   └── tampermonkey-template.js # Userscript template
-├── data.json               # Default config (optional)
-├── tampermonkey-loader.js  # Tampermonkey userscript
-├── package.json
-└── rollup.config.js
+broxy-ext/
+├── shared/                 # Shared core code (used by both builds)
+│   ├── core/               # router.js, bridge-client.js, request-handler.js
+│   ├── bridge/             # float-button.js, bridge-host.js
+│   ├── endpoints/          # routes.js, mcp-tools.js, index.js
+│   ├── utils/              # helpers.js, logger.js, config-manager.js, swagger.js
+│   ├── config.js           # Configuration constants
+│   └── main.js             # Main entry
+├── userscript/             # Tampermonkey userscript build
+│   ├── scripts/            # generate-loader.js, tampermonkey-template.js
+│   ├── data.json           # Default config data
+│   └── rollup.config.js    # Rollup configuration
+├── extension/              # Chrome Extension build
+│   ├── entrypoints/        # Content script (WXT format)
+│   ├── public/icon/        # Extension icons
+│   └── wxt.config.ts       # WXT configuration
+├── dist/                   # Build intermediate files
+│   └── broxy.js            # Bundled core code
+├── .output/                # Extension build output
+│   └── chrome-mv3/         # Chrome Extension ready to load
+├── tampermonkey-loader.js  # Userscript output
+└── package.json
 ```
 
 ## Quick Start
 
-### 1. Install Dependencies
+### For Users
+
+Install from [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/broxy/kbbobefcojhkfldidakefeeggjgldbjf) and start using immediately.
+
+### For Developers
 
 ```bash
+# Install dependencies
 npm install
+
+# Build all (userscript + extension)
+npm run build
+
+# Build userscript only
+npm run build:us
+
+# Build Chrome Extension only
+npm run build:ext
+
+# Development mode (Extension with HMR)
+npm run dev
 ```
 
-### 2. Configure (Optional)
+### Build Outputs
 
-Edit `src/config.js` to modify `WORKER_DOMAIN`:
+| Product | Output Path | Usage |
+|---------|-------------|-------|
+| Userscript | `tampermonkey-loader.js` | Install to Tampermonkey |
+| Chrome Extension | `.output/chrome-mv3/` | Chrome load unpacked |
 
-```javascript
-WORKER_DOMAIN: 'your-worker-domain.workers.dev'
-```
+### Default Data (Optional)
 
-### 3. Default Data (Optional)
-
-Create `data.json` for initial configuration:
+Create `userscript/data.json` for initial configuration:
 
 ```json
 {
@@ -104,20 +134,6 @@ Create `data.json` for initial configuration:
   }
 }
 ```
-
-### 4. Build
-
-```bash
-npm run build
-```
-
-Output files:
-- `dist/broxy.js` - Core bundle
-- `tampermonkey-loader.js` - Ready-to-install userscript
-
-### 5. Install to Tampermonkey
-
-Copy `tampermonkey-loader.js` content to a new Tampermonkey script.
 
 ## UI Panel
 

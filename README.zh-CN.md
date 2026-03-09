@@ -13,57 +13,87 @@
 - Monaco Editor 代码编辑器
 - 数据导入/导出
 
+## 安装
+
+### 浏览器扩展（推荐）
+
+从 Edge 扩展商店安装：[Broxy](https://microsoftedge.microsoft.com/addons/detail/broxy/kbbobefcojhkfldidakefeeggjgldbjf)
+
+> 同时兼容 Chrome 及其他基于 Chromium 的浏览器。
+
+### 油猴脚本
+
+从源码构建并手动安装：
+
+```bash
+npm install
+npm run build
+```
+
+然后将 `tampermonkey-loader.js` 内容复制到 Tampermonkey 新建脚本中。
+
 ## 目录结构
 
 ```
-ext/
-├── src/                      # 源代码
-│   ├── config.js            # 配置文件
-│   ├── main.js              # 应用入口
-│   ├── endpoints/           # 端点定义
-│   │   ├── index.js        # 端点注册中心
-│   │   ├── mcp-tools.js    # MCP 工具
-│   │   └── routes.js       # 普通路由
-│   ├── core/                # 核心功能
-│   │   ├── router.js       # 路由系统
-│   │   └── bridge-client.js # WebSocket 客户端
-│   ├── bridge/              # UI 组件
-│   │   ├── float-button.js # 浮动按钮
-│   │   └── bridge-host.js  # iframe 管理
-│   └── utils/               # 工具函数
-│       ├── helpers.js      # 辅助函数
-│       ├── logger.js       # 日志管理
-│       └── config-manager.js # 配置管理
-├── dist/                    # 打包输出
-│   └── broxy.js            # 最终脚本
-├── scripts/                 # 构建脚本
-│   ├── generate-loader.js  # 生成油猴脚本
-│   └── tampermonkey-template.js # 油猴模板
-├── data.json               # 默认配置（可选）
-├── tampermonkey-loader.js  # 油猴加载脚本
-├── package.json
-└── rollup.config.js
+broxy-ext/
+├── shared/                 # 共享核心代码（双构建共用）
+│   ├── core/               # router.js, bridge-client.js, request-handler.js
+│   ├── bridge/             # float-button.js, bridge-host.js
+│   ├── endpoints/          # routes.js, mcp-tools.js, index.js
+│   ├── utils/              # helpers.js, logger.js, config-manager.js, swagger.js
+│   ├── config.js           # 配置常量
+│   └── main.js             # 主入口
+├── userscript/             # 油猴脚本构建
+│   ├── scripts/            # generate-loader.js, tampermonkey-template.js
+│   ├── data.json           # 默认配置数据
+│   └── rollup.config.js    # Rollup 配置
+├── extension/              # Chrome 扩展构建
+│   ├── entrypoints/        # Content Script 入口
+│   ├── public/icon/        # 扩展图标
+│   └── wxt.config.ts       # WXT 配置
+├── dist/                   # 构建中间文件
+│   └── broxy.js            # 打包核心代码
+├── .output/                # 扩展构建输出
+│   └── chrome-mv3/         # Chrome 扩展可直接加载
+├── tampermonkey-loader.js  # 油猴脚本输出
+└── package.json
 ```
 
 ## 快速开始
 
-### 1. 安装依赖
+### 普通用户
+
+从 [Edge 扩展商店](https://microsoftedge.microsoft.com/addons/detail/broxy/kbbobefcojhkfldidakefeeggjgldbjf)安装即可使用。
+
+### 开发者
 
 ```bash
+# 安装依赖
 npm install
+
+# 构建全部（油猴脚本 + 扩展）
+npm run build
+
+# 仅构建油猴脚本
+npm run build:us
+
+# 仅构建 Chrome 扩展
+npm run build:ext
+
+# 开发模式（扩展 HMR）
+npm run dev
 ```
 
-### 2. 配置（可选）
+### 构建产物
 
-编辑 `src/config.js`，修改 `WORKER_DOMAIN`：
+| 产物 | 输出路径 | 用途 |
+|------|----------|------|
+| 油猴脚本 | `tampermonkey-loader.js` | 安装到 Tampermonkey |
+| Chrome 扩展 | `.output/chrome-mv3/` | Chrome 加载已解压的扩展 |
 
-```javascript
-WORKER_DOMAIN: 'your-worker-domain.workers.dev'
-```
+### 默认数据（可选）
 
-### 3. 默认数据（可选）
-
-创建 `data.json` 设置初始配置：
+创建 `userscript/data.json` 设置初始配置：
 
 ```json
 {
@@ -104,20 +134,6 @@ WORKER_DOMAIN: 'your-worker-domain.workers.dev'
   }
 }
 ```
-
-### 4. 打包
-
-```bash
-npm run build
-```
-
-输出文件：
-- `dist/broxy.js` - 核心代码
-- `tampermonkey-loader.js` - 油猴脚本（可直接安装）
-
-### 5. 安装到油猴
-
-将 `tampermonkey-loader.js` 内容复制到 Tampermonkey 新建脚本中。
 
 ## UI 面板
 
