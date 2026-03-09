@@ -1,6 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../../package.json');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,6 +35,7 @@ if (fs.existsSync(dataPath)) {
 
 const buildTime = new Date().toISOString();
 const finalScript = template
+  .replace('{{VERSION}}', pkg.version)
   .replace('{{BUILD_TIME}}', buildTime)
   .replace('{{INIT_DATA}}', initDataStr)
   .replace('{{CORE_CODE}}', coreCode);

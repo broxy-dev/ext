@@ -1,6 +1,6 @@
 {
   "name": "broxy-ext",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "description": "Broxy - 将任意网页转换为 API 和 MCP 服务",
   "type": "module",
   "scripts": {

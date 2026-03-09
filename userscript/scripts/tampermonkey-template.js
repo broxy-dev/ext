@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Broxy
 // @namespace    https://broxy.dev/
-// @version      1.0.2
+// @version      {{VERSION}}
 // @description  将任意网页转换为 API 和 MCP 服务
 // @author       broxy-dev
 // @icon         https://broxy.dev/assets/logo.png
