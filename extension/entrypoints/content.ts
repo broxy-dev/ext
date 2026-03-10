@@ -9,6 +9,7 @@ import { BridgeHost } from '../../shared/bridge/bridge-host.js';
 export default defineContentScript({
   matches: ['https://*/*', 'http://*/*'],
   runAt: 'document_end',
+  world: 'MAIN',
   main() {
     if (window.__BROXY_INITIALIZED__) {
       console.log('[Broxy] Already initialized, skipping...');
