@@ -22,6 +22,12 @@ export class BridgeHost {
     this.onPanelToggle = null;
     this.boundHandleMessage = this.handleMessage.bind(this);
     this.boundHandleKeydown = this.handleKeydown.bind(this);
+    this.isPanelDragging = false;
+    this.panelDragStartX = 0;
+    this.panelDragStartY = 0;
+    this.panelStartX = 0;
+    this.panelStartY = 0;
+    this.dragOverlay = null;
   }
 
   // 设置允许的 iframe 来源
@@ -41,7 +47,6 @@ export class BridgeHost {
     this.iframeContainer.id = 'broxy-panel';
     this.iframeContainer.style.display = 'none';
     this.iframeContainer.innerHTML = `
-      <div class="bb-panel-overlay"></div>
       <div class="bb-panel-wrapper">
         <iframe src="${UI_IFRAME_URL}" allow="clipboard-write; clipboard-read"></iframe>
       </div>
@@ -57,11 +62,6 @@ export class BridgeHost {
       }
     });
 
-    this.iframeContainer.querySelector('.bb-panel-overlay').addEventListener('click', () => {
-      this.close();
-    });
-
-    // 始终监听 message 事件
     window.addEventListener('message', this.boundHandleMessage);
     document.addEventListener('keydown', this.boundHandleKeydown);
 
@@ -128,17 +128,15 @@ export class BridgeHost {
       const wrapper = this.iframeContainer.querySelector('.bb-panel-wrapper');
       if (wrapper) {
         if (this.isMaximized) {
-          wrapper.style.width = '100%';
-          wrapper.style.height = '100%';
-          wrapper.style.maxWidth = '100%';
-          wrapper.style.maxHeight = '100%';
-          wrapper.style.borderRadius = '0';
+          wrapper.classList.add('bb-maximized');
+          wrapper.style.left = '';
+          wrapper.style.top = '';
+          wrapper.style.transform = '';
         } else {
-          wrapper.style.width = `${CONFIG.UI_IFRAME_WIDTH}px`;
-          wrapper.style.height = `${CONFIG.UI_IFRAME_HEIGHT}px`;
-          wrapper.style.maxWidth = '95vw';
-          wrapper.style.maxHeight = '90vh';
-          wrapper.style.borderRadius = '12px';
+          wrapper.classList.remove('bb-maximized');
+          wrapper.style.left = '';
+          wrapper.style.top = '';
+          wrapper.style.transform = 'translate(-50%, -50%)';
         }
       }
     }
@@ -154,24 +152,16 @@ export class BridgeHost {
         right: 0;
         bottom: 0;
         z-index: ${CONFIG.FLOAT_BUTTON.zIndex - 1};
-        align-items: center;
-        justify-content: center;
+        pointer-events: none;
       }
       #broxy-panel.bb-visible {
         animation: bb-fadeIn 0.2s ease;
       }
-      #broxy-panel .bb-panel-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.3);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-      }
       #broxy-panel .bb-panel-wrapper {
-        position: relative;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         width: ${CONFIG.UI_IFRAME_WIDTH}px;
         height: ${CONFIG.UI_IFRAME_HEIGHT}px;
         max-width: 95vw;
@@ -180,6 +170,22 @@ export class BridgeHost {
         overflow: hidden;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         background: #fff;
+        border: 1px solid rgba(60, 60, 60, 0.2);
+        pointer-events: auto;
+      }
+      #broxy-panel .bb-panel-wrapper.bb-dragging {
+        transition: none;
+      }
+      #broxy-panel .bb-panel-wrapper.bb-maximized {
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        transform: none;
+        border-radius: 0;
+        border: none;
       }
       #broxy-panel iframe {
         width: 100%;
@@ -200,6 +206,85 @@ export class BridgeHost {
   handleKeydown(e) {
     if (e.key === 'Escape' && this.isOpen) {
       this.close();
+    }
+  }
+
+  startPanelDrag(screenX, screenY) {
+    if (this.isMaximized) return;
+    
+    const wrapper = this.iframeContainer?.querySelector('.bb-panel-wrapper');
+    if (!wrapper) return;
+
+    this.isPanelDragging = true;
+    this.panelDragStartX = screenX;
+    this.panelDragStartY = screenY;
+
+    const rect = wrapper.getBoundingClientRect();
+    this.panelStartX = rect.left;
+    this.panelStartY = rect.top;
+
+    wrapper.classList.add('bb-dragging');
+    wrapper.style.transform = 'none';
+    wrapper.style.left = `${this.panelStartX}px`;
+    wrapper.style.top = `${this.panelStartY}px`;
+
+    this.dragOverlay = document.createElement('div');
+    this.dragOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: ${CONFIG.FLOAT_BUTTON.zIndex + 1};
+      cursor: move;
+    `;
+    this.dragOverlay.addEventListener('mousemove', (e) => this.updatePanelPosition(e.screenX, e.screenY));
+    this.dragOverlay.addEventListener('mouseup', () => this.endPanelDrag());
+    this.dragOverlay.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      this.updatePanelPosition(e.touches[0].screenX, e.touches[0].screenY);
+    }, { passive: false });
+    this.dragOverlay.addEventListener('touchend', () => this.endPanelDrag());
+    document.body.appendChild(this.dragOverlay);
+  }
+
+  updatePanelPosition(screenX, screenY) {
+    if (!this.isPanelDragging) return;
+
+    const wrapper = this.iframeContainer?.querySelector('.bb-panel-wrapper');
+    if (!wrapper) return;
+
+    const deltaX = screenX - this.panelDragStartX;
+    const deltaY = screenY - this.panelDragStartY;
+
+    const width = wrapper.offsetWidth;
+    const height = wrapper.offsetHeight;
+    const maxX = window.innerWidth - width;
+    const maxY = window.innerHeight - height;
+
+    let newX = this.panelStartX + deltaX;
+    let newY = this.panelStartY + deltaY;
+
+    newX = Math.max(0, Math.min(maxX, newX));
+    newY = Math.max(0, Math.min(maxY, newY));
+
+    wrapper.style.left = `${newX}px`;
+    wrapper.style.top = `${newY}px`;
+  }
+
+  endPanelDrag() {
+    if (!this.isPanelDragging) return;
+
+    const wrapper = this.iframeContainer?.querySelector('.bb-panel-wrapper');
+    if (wrapper) {
+      wrapper.classList.remove('bb-dragging');
+    }
+
+    this.isPanelDragging = false;
+
+    if (this.dragOverlay) {
+      this.dragOverlay.remove();
+      this.dragOverlay = null;
     }
   }
 
@@ -472,6 +557,10 @@ export class BridgeHost {
         
         return { success: true, webId: newWebId };
       }
+
+      case 'dragStart':
+        this.startPanelDrag(data?.x, data?.y);
+        return { success: true };
 
       default:
         throw new Error(`Unknown action: ${action}`);

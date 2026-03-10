@@ -206,13 +206,28 @@ export class FloatButton {
   }
 
   applyPosition() {
+    const { size, offset } = CONFIG.FLOAT_BUTTON;
+    
     if (this.position) {
-      this.button.style.left = `${this.position.x}px`;
-      this.button.style.top = `${this.position.y}px`;
+      const maxX = window.innerWidth - size;
+      const maxY = window.innerHeight - size;
+      
+      let x = this.position.x;
+      let y = this.position.y;
+      
+      if (x > maxX) x = Math.max(0, maxX);
+      if (y > maxY) y = Math.max(0, maxY);
+      
+      this.button.style.left = `${x}px`;
+      this.button.style.top = `${y}px`;
       this.button.style.right = 'auto';
       this.button.style.bottom = 'auto';
+      
+      if (x !== this.position.x || y !== this.position.y) {
+        this.position = { x, y };
+        this.savePosition(x, y);
+      }
     } else {
-      const { offset } = CONFIG.FLOAT_BUTTON;
       this.button.style.bottom = `${offset}px`;
       this.button.style.right = `${offset}px`;
     }
@@ -249,6 +264,44 @@ export class FloatButton {
     this.button.addEventListener('touchstart', this.onDragStart.bind(this), { passive: false });
     document.addEventListener('touchmove', this.onDragMove.bind(this), { passive: false });
     document.addEventListener('touchend', this.onDragEnd.bind(this));
+
+    // Window resize
+    this.onWindowResizeBound = this.onWindowResize.bind(this);
+    window.addEventListener('resize', this.onWindowResizeBound);
+  }
+
+  onWindowResize() {
+    if (!this.button) return;
+
+    const { size } = CONFIG.FLOAT_BUTTON;
+    const maxX = window.innerWidth - size;
+    const maxY = window.innerHeight - size;
+
+    if (maxX < 0 || maxY < 0) return;
+
+    const rect = this.button.getBoundingClientRect();
+    let newX = rect.left;
+    let newY = rect.top;
+
+    let needsUpdate = false;
+
+    if (newX > maxX) {
+      newX = Math.max(0, maxX);
+      needsUpdate = true;
+    }
+    if (newY > maxY) {
+      newY = Math.max(0, maxY);
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      this.button.style.left = `${newX}px`;
+      this.button.style.top = `${newY}px`;
+      this.button.style.right = 'auto';
+      this.button.style.bottom = 'auto';
+      this.position = { x: newX, y: newY };
+      this.savePosition(newX, newY);
+    }
   }
 
   onDragStart(e) {
@@ -356,6 +409,7 @@ export class FloatButton {
   }
 
   destroy() {
+    window.removeEventListener('resize', this.onWindowResizeBound);
     if (this.button) {
       this.button.remove();
       this.button = null;
