@@ -2,3 +2,4 @@ dist/
 node_modules/
 .output/
 .wxt/
+tampermonkey-loader.js
