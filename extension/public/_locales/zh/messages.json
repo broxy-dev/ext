@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "Broxy",
+    "description": "扩展名称"
+  },
+  "extDescription": {
+    "message": "将任意网页转换为 API 和 MCP 服务",
+    "description": "扩展描述"
+  }
+}

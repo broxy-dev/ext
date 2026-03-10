@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "Broxy",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Convert any webpage into API and MCP services",
+    "description": "Extension description"
+  }
+}
