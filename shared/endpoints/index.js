@@ -3,6 +3,7 @@ import { router } from '../core/router.js';
 import { mcpTools } from './mcp-tools.js';
 import { routes } from './routes.js';
 import { ConfigManager } from '../utils/config-manager.js';
+import { generateSkillContent } from '../utils/skill-generator.js';
 
 // MCP 工具列表路由
 const mcpToolsListRoute = {
@@ -27,6 +28,32 @@ const mcpConfigRoute = {
       configManagerInstance = new ConfigManager();
     }
     return configManagerInstance.getMCPConfig();
+  }
+};
+
+const skillMdRoute = {
+  name: 'skill_md',
+  pattern: '/SKILL.md',
+  description: '返回 SKILL.md 文件内容',
+  handler: async () => {
+    if (!configManagerInstance) {
+      configManagerInstance = new ConfigManager();
+    }
+    const skillConfig = configManagerInstance.getSkillConfig();
+    const mcpConfig = configManagerInstance.getMCPConfig();
+    const webId = window.broxy?.webId || '';
+    const authEnabled = configManagerInstance.isAuthEnabled();
+    const authToken = configManagerInstance.getAuthToken();
+
+    const content = generateSkillContent(
+      skillConfig, mcpConfig, webId, authEnabled, authToken
+    );
+
+    return {
+      status: 200,
+      headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+      body: content
+    };
   }
 };
 
@@ -56,6 +83,7 @@ export function initEndpoints() {
   routes.forEach(route => router.register(route));
   router.register(mcpToolsListRoute);
   router.register(mcpConfigRoute);
+  router.register(skillMdRoute);
   router.register(defaultRoute);
 
   const dynamicRoutes = configManager.getAllRoutes().filter(r => r.enabled);
