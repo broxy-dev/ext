@@ -308,6 +308,9 @@ export class BridgeHost {
       authToken: this.configManager.getAuthToken(),
       authEnabled: this.configManager.isAuthEnabled(),
       connectedAt: this.client?.connectedAt || null,
+      skillConfig: this.configManager.getSkillConfig(),
+      theme: this.configManager.getTheme(),
+      language: this.configManager.getLanguage(),
     };
   }
 
@@ -482,6 +485,36 @@ export class BridgeHost {
         return { success: true };
       }
 
+      case 'saveSkillConfig': {
+        if (data.skillConfig !== undefined) {
+          this.configManager.setSkillConfig(data.skillConfig);
+        }
+        this.sendToIframe('skillConfigChange', {
+          skillConfig: this.configManager.getSkillConfig(),
+        });
+        return { success: true };
+      }
+
+      case 'saveTheme': {
+        if (data.theme !== undefined) {
+          this.configManager.setTheme(data.theme);
+        }
+        this.sendToIframe('themeChange', {
+          theme: this.configManager.getTheme(),
+        });
+        return { success: true };
+      }
+
+      case 'saveLanguage': {
+        if (data.language !== undefined) {
+          this.configManager.setLanguage(data.language);
+        }
+        this.sendToIframe('languageChange', {
+          language: this.configManager.getLanguage(),
+        });
+        return { success: true };
+      }
+
       case 'exportData':
         return this.configManager.exportAllData();
 
@@ -498,7 +531,15 @@ export class BridgeHost {
           mcpConfig: this.configManager.getMCPConfig(),
           initScript: this.configManager.getInitScript(),
         });
-        // 导入数据后执行初始化脚本
+        this.sendToIframe('skillConfigChange', {
+          skillConfig: this.configManager.getSkillConfig(),
+        });
+        this.sendToIframe('themeChange', {
+          theme: this.configManager.getTheme(),
+        });
+        this.sendToIframe('languageChange', {
+          language: this.configManager.getLanguage(),
+        });
         const importedInitScript = this.configManager.getInitScript();
         if (importedInitScript && importedInitScript.trim()) {
           this.client.executeInitScript();

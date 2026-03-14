@@ -5,29 +5,23 @@ export class ConfigManager {
     this.load();
   }
 
-  get ROUTES_KEY() {
-    return `broxy_routes_${window.location.hostname}`;
-  }
+  ROUTES_KEY = 'broxy_routes';
 
-  get TOOLS_KEY() {
-    return `broxy_tools_${window.location.hostname}`;
-  }
+  TOOLS_KEY = 'broxy_tools';
 
-  get MCP_CONFIG_KEY() {
-    return 'broxy_mcp_config';
-  }
+  MCP_CONFIG_KEY = 'broxy_mcp_config';
 
-  get INIT_SCRIPT_KEY() {
-    return 'broxy_init_script';
-  }
+  INIT_SCRIPT_KEY = 'broxy_init_script';
 
-  get AUTH_TOKEN_KEY() {
-    return 'broxy_auth_token';
-  }
+  AUTH_TOKEN_KEY = 'broxy_auth_token';
 
-  get AUTH_ENABLED_KEY() {
-    return 'broxy_auth_enabled';
-  }
+  AUTH_ENABLED_KEY = 'broxy_auth_enabled';
+
+  SKILL_CONFIG_KEY = 'broxy_skill_config';
+
+  THEME_KEY = 'broxy_theme';
+
+  LANGUAGE_KEY = 'broxy_language';
 
   load() {
     const routes = localStorage.getItem(this.ROUTES_KEY);
@@ -146,6 +140,35 @@ export class ConfigManager {
     localStorage.setItem(this.AUTH_ENABLED_KEY, String(enabled));
   }
 
+  getSkillConfig() {
+    const config = localStorage.getItem(this.SKILL_CONFIG_KEY);
+    return config ? JSON.parse(config) : {
+      name: '',
+      description: '',
+      usageNotes: '',
+    };
+  }
+
+  setSkillConfig(config) {
+    localStorage.setItem(this.SKILL_CONFIG_KEY, JSON.stringify(config));
+  }
+
+  getTheme() {
+    return localStorage.getItem(this.THEME_KEY) || 'system';
+  }
+
+  setTheme(theme) {
+    localStorage.setItem(this.THEME_KEY, theme);
+  }
+
+  getLanguage() {
+    return localStorage.getItem(this.LANGUAGE_KEY) || '';
+  }
+
+  setLanguage(lang) {
+    localStorage.setItem(this.LANGUAGE_KEY, lang);
+  }
+
   generateToken() {
     return crypto.randomUUID();
   }
@@ -162,6 +185,9 @@ export class ConfigManager {
         initScript: this.getInitScript(),
         authToken: this.getAuthToken(),
         authEnabled: this.isAuthEnabled(),
+        skillConfig: this.getSkillConfig(),
+        theme: this.getTheme(),
+        language: this.getLanguage(),
       },
     };
   }
@@ -187,6 +213,15 @@ export class ConfigManager {
     }
     if (data.authEnabled !== undefined) {
       this.setAuthEnabled(data.authEnabled);
+    }
+    if (data.skillConfig !== undefined) {
+      this.setSkillConfig(data.skillConfig);
+    }
+    if (data.theme !== undefined) {
+      this.setTheme(data.theme);
+    }
+    if (data.language !== undefined) {
+      this.setLanguage(data.language);
     }
   }
 
