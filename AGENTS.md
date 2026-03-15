@@ -258,3 +258,100 @@ Version is unified in `package.json`. Both userscript and extension read from it
 7. **localStorage** - Using localStorage (not chrome.storage) for simplicity and compatibility.
 8. **MAIN World** - Content script runs in MAIN world to bypass CSP restrictions (same as Tampermonkey).
 9. **No Auto Git Commit/Push** - Do NOT automatically run `git commit` or `git push`. User needs to manually review code before committing.
+
+## Dynamic Action Registration (Hot Update)
+
+ext provides `registerAction` capability, allowing ext-ui to dynamically register new action handlers without updating the extension.
+
+### Register Action
+
+```javascript
+// ext-ui sends to parent
+const response = await sendAction('registerAction', {
+  name: 'myNewAction',
+  handler: `async function(data) {
+    // 'this' refers to BridgeHost instance
+    // Available: this.configManager, this.client, this.router, etc.
+    const result = this.configManager.getSkillConfig();
+    return { success: true, result };
+  }`
+});
+```
+
+### Call Registered Action
+
+```javascript
+// After registration, call like normal action
+const result = await sendAction('myNewAction', { param: 'value' });
+```
+
+### Unregister Action
+
+```javascript
+await sendAction('unregisterAction', { name: 'myNewAction' });
+```
+
+### Available Context in Handler
+
+Inside the handler function, `this` refers to `BridgeHost` instance:
+
+| Property | Description |
+|----------|-------------|
+| `this.configManager` | ConfigManager instance (routes, tools, settings) |
+| `this.client` | BridgeClient instance (WebSocket connection) |
+| `this.router` | Router instance (route matching) |
+| `this.logger` | Logger instance (add logs) |
+| `this.iframe` | iframe element |
+| `this.sendToIframe(event, data)` | Send message to iframe UI |
+| `this.addLog(type, method, path, ...)` | Add execution log |
+| `this.addSystemLog(type, action, message)` | Add system log |
+
+### Example: Add Custom Route Dynamically
+
+```javascript
+// Register an action that adds a new route
+await sendAction('registerAction', {
+  name: 'addCustomRoute',
+  handler: `async function(data) {
+    const { pattern, handlerCode } = data;
+    const handler = new Function('return ' + handlerCode)();
+    this.router.register({
+      name: 'dynamic_' + Date.now(),
+      pattern: pattern,
+      handler: handler
+    });
+    return { success: true };
+  }`
+});
+
+// Use it to add a route
+await sendAction('addCustomRoute', {
+  pattern: '/my-custom-endpoint',
+  handlerCode: 'async (method, path, query, body) => ({ hello: "world" })'
+});
+```
+
+### Example: Override Built-in Behavior
+
+```javascript
+// Register action to get extended state
+await sendAction('registerAction', {
+  name: 'getExtendedState',
+  handler: `async function(data) {
+    return {
+      webId: this.client?.webId,
+      routes: this.configManager.getAllRoutes(),
+      tools: this.configManager.getAllTools(),
+      customData: { /* ext-ui managed data */ }
+    };
+  }`
+});
+```
+
+### Best Practices
+
+1. **Use async function** - Handler should be async for consistency
+2. **Return structured response** - `{ success: true/false, result/error }`
+3. **Error handling** - Wrap risky operations in try/catch
+4. **Avoid name conflicts** - Use prefix like `ext_` or `custom_` for action names
+5. **Log important operations** - Use `console.log('[BridgeHost] ...')` for debugging

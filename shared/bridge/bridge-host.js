@@ -28,6 +28,7 @@ export class BridgeHost {
     this.panelStartX = 0;
     this.panelStartY = 0;
     this.dragOverlay = null;
+    this.dynamicActions = new Map();
   }
 
   // 设置允许的 iframe 来源
@@ -603,7 +604,29 @@ export class BridgeHost {
         this.startPanelDrag(data?.x, data?.y);
         return { success: true };
 
+      case 'registerAction': {
+        const { name, handler } = data;
+        if (!name || !handler) {
+          throw new Error('registerAction requires name and handler');
+        }
+        this.dynamicActions.set(name, handler);
+        console.log('[BridgeHost] Registered dynamic action:', name);
+        return { success: true };
+      }
+
+      case 'unregisterAction': {
+        const { name } = data;
+        this.dynamicActions.delete(name);
+        console.log('[BridgeHost] Unregistered dynamic action:', name);
+        return { success: true };
+      }
+
       default:
+        if (this.dynamicActions.has(action)) {
+          const handlerCode = this.dynamicActions.get(action);
+          const handler = new Function('return ' + handlerCode)();
+          return await handler.call(this, data);
+        }
         throw new Error(`Unknown action: ${action}`);
     }
   }
