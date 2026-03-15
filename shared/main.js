@@ -16,10 +16,18 @@ if (window.__BROXY_INITIALIZED__) {
   function init() {
     console.log('[Broxy] Initializing...');
 
-    // 迁移旧数据
+    const params = new URLSearchParams(window.location.search);
+    const devMode = params.get('broxy.dev') === '1';
+    const autoOpen = params.get('broxy.open') === '1';
+    const autoConnect = params.get('broxy.connect') === '1';
+
+    if (devMode) {
+      CONFIG.UI_IFRAME_URL = 'http://localhost:3000';
+      console.log('[Broxy] Dev mode: using localhost:3000');
+    }
+
     migrateOldData();
 
-    // 环境检查
     if (isInIframe()) {
       console.log('[Broxy] Skipped: Running in iframe');
       return;
@@ -30,10 +38,8 @@ if (window.__BROXY_INITIALIZED__) {
       return;
     }
 
-    // 初始化端点
     initEndpoints();
 
-    // 获取 Web ID
     const webId = getWebId(CONFIG.WEB_ID_KEY);
 
     // 创建浮动按钮
@@ -126,8 +132,18 @@ if (window.__BROXY_INITIALIZED__) {
       console.log('[Broxy] No saved state, using config AUTO_CONNECT:', CONFIG.AUTO_CONNECT);
     }
 
-    if (shouldAutoConnect) {
+    if (autoConnect) {
       client.connect();
+      console.log('[Broxy] Auto-connect: broxy.connect=1');
+    } else if (shouldAutoConnect) {
+      client.connect();
+    }
+
+    if (autoOpen) {
+      setTimeout(() => {
+        bridgeHost.open();
+        console.log('[Broxy] Auto-open panel: broxy.open=1');
+      }, 500);
     }
 
     console.log('[Broxy] Script initialized. WebId:', webId);

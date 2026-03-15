@@ -180,6 +180,18 @@ npm run dev
 
 Watch for file changes and auto-rebuild.
 
+### URL Parameters
+
+For development and testing, use URL parameters to control behavior:
+
+| Parameter | Description |
+|-----------|-------------|
+| `broxy.dev=1` | Use `http://localhost:3000` as iframe UI URL |
+| `broxy.open=1` | Auto-open iframe panel after page load |
+| `broxy.connect=1` | Auto-connect to WebSocket (overrides saved state) |
+
+Example: `https://example.com?broxy.dev=1&broxy.open=1&broxy.connect=1`
+
 ## Tech Stack
 
 | Component | Technology |

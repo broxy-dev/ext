@@ -19,6 +19,16 @@ export default defineContentScript({
 
     console.log('[Broxy] Initializing...');
 
+    const params = new URLSearchParams(window.location.search);
+    const devMode = params.get('broxy.dev') === '1';
+    const autoOpen = params.get('broxy.open') === '1';
+    const autoConnect = params.get('broxy.connect') === '1';
+
+    if (devMode) {
+      CONFIG.UI_IFRAME_URL = 'http://localhost:3000';
+      console.log('[Broxy] Dev mode: using localhost:3000');
+    }
+
     migrateOldData();
 
     if (isInIframe()) {
@@ -108,8 +118,18 @@ export default defineContentScript({
       console.log('[Broxy] No saved state, using config AUTO_CONNECT:', CONFIG.AUTO_CONNECT);
     }
 
-    if (shouldAutoConnect) {
+    if (autoConnect) {
       client.connect();
+      console.log('[Broxy] Auto-connect: broxy.connect=1');
+    } else if (shouldAutoConnect) {
+      client.connect();
+    }
+
+    if (autoOpen) {
+      setTimeout(() => {
+        bridgeHost.open();
+        console.log('[Broxy] Auto-open panel: broxy.open=1');
+      }, 500);
     }
 
     console.log('[Broxy] Extension initialized. WebId:', webId);

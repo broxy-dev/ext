@@ -180,6 +180,18 @@ npm run dev
 
 监听文件变化自动重新打包。
 
+### URL 参数
+
+开发测试时，可通过 URL 参数控制行为：
+
+| 参数 | 说明 |
+|------|------|
+| `broxy.dev=1` | 使用 `http://localhost:3000` 作为 iframe UI 地址 |
+| `broxy.open=1` | 页面加载后自动打开 iframe 面板 |
+| `broxy.connect=1` | 自动连接 WebSocket（覆盖已保存状态） |
+
+示例：`https://example.com?broxy.dev=1&broxy.open=1&broxy.connect=1`
+
 ## 技术栈
 
 | 组件 | 技术 |
