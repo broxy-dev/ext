@@ -15,6 +15,7 @@ npm run build:us         # Build Tampermonkey userscript only
 npm run build:ext        # Build Chrome Extension only
 npm run build:ext:firefox # Build Firefox Extension
 npm run dev              # Extension dev mode with HMR
+npx tsc --noEmit         # Type check (no build)
 ```
 
 ## Build Outputs
@@ -29,10 +30,6 @@ npm run dev              # Extension dev mode with HMR
 
 No test framework configured. Consider Vitest or Node's built-in test runner.
 
-## Linting/Type Checking
-
-No linter configured. TypeScript checking available via `tsconfig.json`.
-
 ## Directory Structure
 
 ```
@@ -45,14 +42,7 @@ broxy-ext/
 │   ├── config.js           # Configuration constants
 │   └── main.js             # Main entry logic
 ├── userscript/             # Tampermonkey userscript build
-│   ├── scripts/            # generate-loader.js, tampermonkey-template.js
-│   ├── data.json           # Default config data
-│   └── rollup.config.js    # Rollup configuration
-├── extension/              # Chrome Extension build
-│   ├── entrypoints/
-│   │   └── content.ts      # Content script entry (WXT format)
-│   ├── public/icon/        # Extension icons (16/32/48/128.png)
-│   └── wxt.config.ts       # WXT configuration
+├── extension/              # Chrome Extension build (WXT format)
 ├── dist/                   # Build intermediate files
 └── .output/                # Extension build output
 ```
@@ -65,15 +55,6 @@ broxy-ext/
 - Always include `.js` extension in imports: `import { foo } from './bar.js';`
 - Content script uses `defineContentScript()` from WXT
 
-### File Headers
-
-Each file starts with a brief comment describing the module:
-```javascript
-// 路由匹配系统
-// 浮动按钮组件
-// 工具函数模块
-```
-
 ### Naming Conventions
 
 | Type | Convention | Example |
@@ -82,28 +63,9 @@ Each file starts with a brief comment describing the module:
 | Functions | camelCase | `handleRequest`, `getWebId`, `isInIframe` |
 | Constants | UPPER_SNAKE_CASE | `WORKER_URL`, `HTTP_URL`, `AUTO_CONNECT` |
 | Config objects | UPPER_SNAKE_CASE | `CONFIG`, `FLOAT_BUTTON` |
-| localStorage keys | snake_case with prefix | `broxy_web_id_`, `broxy_routes_` |
+| localStorage keys | snake_case with prefix | `broxy_web_id`, `broxy_routes` |
 | Event types | lowercase with dots | `bb/event`, `bb/action`, `bb/response` |
-| CSS classes | kebab-case with prefix | `bb-dragging`, `bb-reconnecting` |
-
-### Class Structure
-
-```javascript
-export class ClassName {
-  constructor(param) {
-    this.property = param;
-    this.state = 'initial';
-  }
-
-  publicMethod() {
-    return this.privateHelper();
-  }
-
-  privateHelper() {
-    return 'result';
-  }
-}
-```
+| CSS classes | kebab-case with prefix | `bb-dragging`, `bb-maximized` |
 
 ### Error Handling
 
@@ -115,11 +77,6 @@ try {
   console.error('[Broxy] Operation failed:', error);
   return { error: error.message };
 }
-
-// Return error objects for route handlers
-if (!matched) {
-  return { error: 'No route matched', path: formattedPath };
-}
 ```
 
 ### Console Logging
@@ -128,7 +85,7 @@ Always use bracket prefixes for log messages:
 ```javascript
 console.log('[Broxy] Initializing...');
 console.log('[Router] Matched route:', route.name);
-console.error('[FloatButton] Failed to create:', error);
+console.error('[BridgeHost] Failed:', error);
 ```
 
 ### Configuration Objects
@@ -136,17 +93,10 @@ console.error('[FloatButton] Failed to create:', error);
 ```javascript
 export const CONFIG = {
   WORKER_DOMAIN: 'v1.broxy.dev',
-  
-  // Use getters for dynamic keys based on hostname
-  get WEB_ID_KEY() {
-    return `broxy_web_id_${window.location.hostname}`;
-  },
-  
+  AUTO_CONNECT: location.host.endsWith('broxy.dev'),
   FLOAT_BUTTON: {
     size: 48,
     zIndex: 999999,
-    defaultPosition: 'bottom-right',
-    offset: 20,
   },
 };
 ```
@@ -154,30 +104,22 @@ export const CONFIG = {
 ### Route/Tool Definitions
 
 ```javascript
-// Route structure
+// Route
 {
-  id: 'route-1',           // Unique identifier
-  name: 'getUserInfo',     // Route name
-  pattern: '/api/user',    // URL pattern (string or RegExp)
-  method: 'get',           // HTTP method (optional, default: 'all')
-  description: 'Get user info',
-  handler: 'async () => { return { name: "test" }; }',  // Handler as string
+  id: 'route-1',
+  name: 'getUserInfo',
+  pattern: '/api/user',
+  method: 'get',
+  handler: 'async () => { return { name: "test" }; }',
   enabled: true
 }
 
-// MCP Tool structure
+// MCP Tool
 {
   id: 'tool-1',
   name: 'clickElement',
   pattern: '/mcp/clickElement',
-  description: 'Click an element',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      selector: { type: 'string', description: 'CSS selector' }
-    },
-    required: ['selector']
-  },
+  inputSchema: { type: 'object', properties: { selector: { type: 'string' } } },
   handler: 'async ({ selector }) => { document.querySelector(selector)?.click(); return { success: true }; }',
   enabled: true
 }
@@ -194,12 +136,10 @@ const result = await handlerFn(method, path, query, body, headers);
 ### PostMessage Communication
 
 ```javascript
-// Event from iframe
+// Event to iframe
 window.postMessage({ type: 'bb/event', event: 'statusChange', data: {...} }, '*');
-
 // Response to iframe
 window.postMessage({ type: 'bb/response', id: 'req-1', result: {...} }, '*');
-
 // Action from iframe
 window.postMessage({ type: 'bb/action', id: 'req-1', action: 'saveRoute', data: {...} }, '*');
 ```
@@ -207,21 +147,10 @@ window.postMessage({ type: 'bb/action', id: 'req-1', action: 'saveRoute', data: 
 ### DOM Manipulation
 
 ```javascript
-// Use Object.assign for multiple styles
-Object.assign(element.style, {
-  position: 'fixed',
-  width: '48px',
-  zIndex: '999999'
-});
-
-// Use classList for classes
+Object.assign(element.style, { position: 'fixed', width: '48px', zIndex: '999999' });
 element.classList.add('bb-dragging');
-element.classList.remove('bb-dragging');
-
-// Create elements with properties
 const button = document.createElement('div');
 button.id = 'broxy-float-btn';
-button.title = 'Broxy';
 ```
 
 ### Content Script (WXT)
@@ -232,20 +161,12 @@ export default defineContentScript({
   runAt: 'document_end',
   world: 'MAIN',  // Run in MAIN world to bypass CSP restrictions
   main() {
-    // Import from shared/ and execute
     if (window.__BROXY_INITIALIZED__) return;
     window.__BROXY_INITIALIZED__ = true;
-    
     // ... initialization code
   },
 });
 ```
-
-### Version Management
-
-Version is unified in `package.json`. Both userscript and extension read from it at build time:
-- `extension/wxt.config.ts` imports `pkg.version`
-- `userscript/scripts/generate-loader.js` injects `pkg.version` into template
 
 ## Important Notes
 
@@ -256,102 +177,28 @@ Version is unified in `package.json`. Both userscript and extension read from it
 5. **Handler Strings** - Handlers stored as strings, executed via `new Function()`.
 6. **Dual Build** - Code must work in both Tampermonkey and Chrome Extension contexts.
 7. **localStorage** - Using localStorage (not chrome.storage) for simplicity and compatibility.
-8. **MAIN World** - Content script runs in MAIN world to bypass CSP restrictions (same as Tampermonkey).
-9. **No Auto Git Commit/Push** - Do NOT automatically run `git commit` or `git push`. User needs to manually review code before committing.
+8. **MAIN World** - Content script runs in MAIN world to bypass CSP restrictions.
+9. **No Auto Git Commit/Push** - Do NOT automatically run `git commit` or `git push`.
 
-## Dynamic Action Registration (Hot Update)
+## Dynamic Action Registration
 
-ext provides `registerAction` capability, allowing ext-ui to dynamically register new action handlers without updating the extension.
-
-### Register Action
+ext provides `registerAction` capability for hot-updating action handlers:
 
 ```javascript
-// ext-ui sends to parent
-const response = await sendAction('registerAction', {
-  name: 'myNewAction',
+// Register
+await sendAction('registerAction', {
+  name: 'myAction',
   handler: `async function(data) {
     // 'this' refers to BridgeHost instance
-    // Available: this.configManager, this.client, this.router, etc.
-    const result = this.configManager.getSkillConfig();
-    return { success: true, result };
-  }`
-});
-```
-
-### Call Registered Action
-
-```javascript
-// After registration, call like normal action
-const result = await sendAction('myNewAction', { param: 'value' });
-```
-
-### Unregister Action
-
-```javascript
-await sendAction('unregisterAction', { name: 'myNewAction' });
-```
-
-### Available Context in Handler
-
-Inside the handler function, `this` refers to `BridgeHost` instance:
-
-| Property | Description |
-|----------|-------------|
-| `this.configManager` | ConfigManager instance (routes, tools, settings) |
-| `this.client` | BridgeClient instance (WebSocket connection) |
-| `this.router` | Router instance (route matching) |
-| `this.logger` | Logger instance (add logs) |
-| `this.iframe` | iframe element |
-| `this.sendToIframe(event, data)` | Send message to iframe UI |
-| `this.addLog(type, method, path, ...)` | Add execution log |
-| `this.addSystemLog(type, action, message)` | Add system log |
-
-### Example: Add Custom Route Dynamically
-
-```javascript
-// Register an action that adds a new route
-await sendAction('registerAction', {
-  name: 'addCustomRoute',
-  handler: `async function(data) {
-    const { pattern, handlerCode } = data;
-    const handler = new Function('return ' + handlerCode)();
-    this.router.register({
-      name: 'dynamic_' + Date.now(),
-      pattern: pattern,
-      handler: handler
-    });
-    return { success: true };
+    return { success: true, result: this.configManager.getSkillConfig() };
   }`
 });
 
-// Use it to add a route
-await sendAction('addCustomRoute', {
-  pattern: '/my-custom-endpoint',
-  handlerCode: 'async (method, path, query, body) => ({ hello: "world" })'
-});
+// Call
+const result = await sendAction('myAction', { param: 'value' });
+
+// Unregister
+await sendAction('unregisterAction', { name: 'myAction' });
 ```
 
-### Example: Override Built-in Behavior
-
-```javascript
-// Register action to get extended state
-await sendAction('registerAction', {
-  name: 'getExtendedState',
-  handler: `async function(data) {
-    return {
-      webId: this.client?.webId,
-      routes: this.configManager.getAllRoutes(),
-      tools: this.configManager.getAllTools(),
-      customData: { /* ext-ui managed data */ }
-    };
-  }`
-});
-```
-
-### Best Practices
-
-1. **Use async function** - Handler should be async for consistency
-2. **Return structured response** - `{ success: true/false, result/error }`
-3. **Error handling** - Wrap risky operations in try/catch
-4. **Avoid name conflicts** - Use prefix like `ext_` or `custom_` for action names
-5. **Log important operations** - Use `console.log('[BridgeHost] ...')` for debugging
+Available context in handler (`this`): `configManager`, `client`, `router`, `logger`, `iframe`, `sendToIframe()`, `addLog()`, `addSystemLog()`.

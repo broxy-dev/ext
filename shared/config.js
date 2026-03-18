@@ -30,6 +30,8 @@ export const CONFIG = {
   USER_DISCONNECTED_KEY: 'broxy_user_disconnected',
   ROUTES_KEY: 'broxy_routes',
   TOOLS_KEY: 'broxy_tools',
+  PANEL_SIZE_KEY: 'broxy_panel_size',
+  PANEL_POSITION_KEY: 'broxy_panel_position',
 
   // 重连配置
   RECONNECT_INTERVAL: 5000,

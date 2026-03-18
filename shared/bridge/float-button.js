@@ -207,16 +207,19 @@ export class FloatButton {
 
   applyPosition() {
     const { size, offset } = CONFIG.FLOAT_BUTTON;
+    const margin = 20;
     
     if (this.position) {
-      const maxX = window.innerWidth - size;
-      const maxY = window.innerHeight - size;
+      const maxX = window.innerWidth - size - margin;
+      const maxY = window.innerHeight - size - margin;
       
       let x = this.position.x;
       let y = this.position.y;
       
-      if (x > maxX) x = Math.max(0, maxX);
-      if (y > maxY) y = Math.max(0, maxY);
+      if (x > maxX) x = Math.max(margin, maxX);
+      if (y > maxY) y = Math.max(margin, maxY);
+      if (x < margin) x = margin;
+      if (y < margin) y = margin;
       
       this.button.style.left = `${x}px`;
       this.button.style.top = `${y}px`;
@@ -274,10 +277,11 @@ export class FloatButton {
     if (!this.button) return;
 
     const { size } = CONFIG.FLOAT_BUTTON;
-    const maxX = window.innerWidth - size;
-    const maxY = window.innerHeight - size;
+    const margin = 20;
+    const maxX = window.innerWidth - size - margin;
+    const maxY = window.innerHeight - size - margin;
 
-    if (maxX < 0 || maxY < 0) return;
+    if (maxX < margin || maxY < margin) return;
 
     const rect = this.button.getBoundingClientRect();
     let newX = rect.left;
@@ -286,11 +290,19 @@ export class FloatButton {
     let needsUpdate = false;
 
     if (newX > maxX) {
-      newX = Math.max(0, maxX);
+      newX = maxX;
       needsUpdate = true;
     }
     if (newY > maxY) {
-      newY = Math.max(0, maxY);
+      newY = maxY;
+      needsUpdate = true;
+    }
+    if (newX < margin) {
+      newX = margin;
+      needsUpdate = true;
+    }
+    if (newY < margin) {
+      newY = margin;
       needsUpdate = true;
     }
 
@@ -345,15 +357,15 @@ export class FloatButton {
       e.preventDefault();
 
       const { size, zIndex } = CONFIG.FLOAT_BUTTON;
-      const maxX = window.innerWidth - size;
-      const maxY = window.innerHeight - size;
+      const margin = 20;
+      const maxX = window.innerWidth - size - margin;
+      const maxY = window.innerHeight - size - margin;
 
       let newX = this.buttonStartX + deltaX;
       let newY = this.buttonStartY + deltaY;
 
-      // 边界限制
-      newX = Math.max(0, Math.min(maxX, newX));
-      newY = Math.max(0, Math.min(maxY, newY));
+      newX = Math.max(margin, Math.min(maxX, newX));
+      newY = Math.max(margin, Math.min(maxY, newY));
 
       this.button.style.left = `${newX}px`;
       this.button.style.top = `${newY}px`;

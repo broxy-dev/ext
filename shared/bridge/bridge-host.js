@@ -29,6 +29,53 @@ export class BridgeHost {
     this.panelStartY = 0;
     this.dragOverlay = null;
     this.dynamicActions = new Map();
+    this.isResizing = false;
+    this.resizeStartX = 0;
+    this.resizeStartY = 0;
+    this.resizeStartWidth = 0;
+    this.resizeStartHeight = 0;
+    this.panelSize = this.loadPanelSize();
+    this.panelPosition = this.loadPanelPosition();
+  }
+
+  loadPanelSize() {
+    try {
+      const saved = localStorage.getItem(CONFIG.PANEL_SIZE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('[BridgeHost] Failed to load panel size:', e);
+    }
+    return { width: CONFIG.UI_IFRAME_WIDTH, height: CONFIG.UI_IFRAME_HEIGHT };
+  }
+
+  savePanelSize(width, height) {
+    try {
+      localStorage.setItem(CONFIG.PANEL_SIZE_KEY, JSON.stringify({ width, height }));
+    } catch (e) {
+      console.error('[BridgeHost] Failed to save panel size:', e);
+    }
+  }
+
+  loadPanelPosition() {
+    try {
+      const saved = localStorage.getItem(CONFIG.PANEL_POSITION_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('[BridgeHost] Failed to load panel position:', e);
+    }
+    return null;
+  }
+
+  savePanelPosition(x, y) {
+    try {
+      localStorage.setItem(CONFIG.PANEL_POSITION_KEY, JSON.stringify({ x, y }));
+    } catch (e) {
+      console.error('[BridgeHost] Failed to save panel position:', e);
+    }
   }
 
   // 设置允许的 iframe 来源
@@ -50,11 +97,60 @@ export class BridgeHost {
     this.iframeContainer.innerHTML = `
       <div class="bb-panel-wrapper">
         <iframe src="${UI_IFRAME_URL}" allow="clipboard-write; clipboard-read"></iframe>
+        <div class="bb-resize-handle"></div>
       </div>
     `;
 
     this.applyContainerStyles();
     document.body.appendChild(this.iframeContainer);
+
+    const wrapper = this.iframeContainer.querySelector('.bb-panel-wrapper');
+    
+    if (this.panelSize) {
+      const maxWidth = Math.floor(window.innerWidth * 0.95);
+      const maxHeight = Math.floor(window.innerHeight * 0.9);
+      
+      let width = this.panelSize.width;
+      let height = this.panelSize.height;
+      
+      width = Math.min(width, maxWidth);
+      height = Math.min(height, maxHeight);
+      
+      if (width !== this.panelSize.width || height !== this.panelSize.height) {
+        this.panelSize = { width, height };
+        this.savePanelSize(width, height);
+      }
+      
+      wrapper.style.width = `${width}px`;
+      wrapper.style.height = `${height}px`;
+      wrapper.style.maxWidth = `${maxWidth}px`;
+      wrapper.style.maxHeight = `${maxHeight}px`;
+    }
+
+    if (this.panelPosition) {
+      const margin = 10;
+      const width = this.panelSize?.width || CONFIG.UI_IFRAME_WIDTH;
+      const height = this.panelSize?.height || CONFIG.UI_IFRAME_HEIGHT;
+      const maxX = Math.max(margin, window.innerWidth - width - margin);
+      const maxY = Math.max(margin, window.innerHeight - height - margin);
+
+      let x = this.panelPosition.x;
+      let y = this.panelPosition.y;
+
+      x = Math.max(margin, Math.min(maxX, x));
+      y = Math.max(margin, Math.min(maxY, y));
+
+      if (x !== this.panelPosition.x || y !== this.panelPosition.y) {
+        this.panelPosition = { x, y };
+        this.savePanelPosition(x, y);
+      }
+
+      wrapper.style.transform = 'none';
+      wrapper.style.left = `${x}px`;
+      wrapper.style.top = `${y}px`;
+      wrapper.style.marginLeft = '';
+      wrapper.style.marginTop = '';
+    }
 
     this.iframe = this.iframeContainer.querySelector('iframe');
     this.iframe.addEventListener('load', () => {
@@ -62,6 +158,16 @@ export class BridgeHost {
         this.sendInitialState();
       }
     });
+
+    const resizeHandle = this.iframeContainer.querySelector('.bb-resize-handle');
+    resizeHandle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      this.startResize(e.screenX, e.screenY);
+    });
+    resizeHandle.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      this.startResize(e.touches[0].screenX, e.touches[0].screenY);
+    }, { passive: false });
 
     window.addEventListener('message', this.boundHandleMessage);
     document.addEventListener('keydown', this.boundHandleKeydown);
@@ -133,11 +239,37 @@ export class BridgeHost {
           wrapper.style.left = '';
           wrapper.style.top = '';
           wrapper.style.transform = '';
+          wrapper.style.width = '';
+          wrapper.style.height = '';
+          wrapper.style.maxWidth = '';
+          wrapper.style.maxHeight = '';
+          wrapper.style.marginLeft = '';
+          wrapper.style.marginTop = '';
         } else {
           wrapper.classList.remove('bb-maximized');
-          wrapper.style.left = '';
-          wrapper.style.top = '';
-          wrapper.style.transform = 'translate(-50%, -50%)';
+          if (this.panelSize) {
+            const maxWidth = Math.floor(window.innerWidth * 0.95);
+            const maxHeight = Math.floor(window.innerHeight * 0.9);
+            const width = Math.min(this.panelSize.width, maxWidth);
+            const height = Math.min(this.panelSize.height, maxHeight);
+            
+            wrapper.style.width = `${width}px`;
+            wrapper.style.height = `${height}px`;
+            wrapper.style.maxWidth = `${maxWidth}px`;
+            wrapper.style.maxHeight = `${maxHeight}px`;
+          }
+          
+          if (this.panelPosition) {
+            wrapper.style.transform = 'none';
+            wrapper.style.left = `${this.panelPosition.x}px`;
+            wrapper.style.top = `${this.panelPosition.y}px`;
+          } else {
+            wrapper.style.transform = 'translate(-50%, -50%)';
+            wrapper.style.left = '50%';
+            wrapper.style.top = '50%';
+          }
+          wrapper.style.marginLeft = '';
+          wrapper.style.marginTop = '';
         }
       }
     }
@@ -171,7 +303,7 @@ export class BridgeHost {
         overflow: hidden;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         background: #fff;
-        border: 1px solid rgba(60, 60, 60, 0.2);
+        border: 1px solid rgba(0, 0, 0, 0.06);
         pointer-events: auto;
       }
       #broxy-panel .bb-panel-wrapper.bb-dragging {
@@ -192,6 +324,22 @@ export class BridgeHost {
         width: 100%;
         height: 100%;
         border: none;
+      }
+      #broxy-panel .bb-resize-handle {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 16px;
+        height: 16px;
+        cursor: nwse-resize;
+        background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.15) 50%);
+        border-radius: 0 0 12px 0;
+      }
+      #broxy-panel .bb-resize-handle:hover {
+        background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.25) 50%);
+      }
+      #broxy-panel .bb-panel-wrapper.bb-maximized .bb-resize-handle {
+        display: none;
       }
       @keyframes bb-fadeIn {
         from { opacity: 0; }
@@ -228,6 +376,8 @@ export class BridgeHost {
     wrapper.style.transform = 'none';
     wrapper.style.left = `${this.panelStartX}px`;
     wrapper.style.top = `${this.panelStartY}px`;
+    wrapper.style.marginLeft = '';
+    wrapper.style.marginTop = '';
 
     this.dragOverlay = document.createElement('div');
     this.dragOverlay.style.cssText = `
@@ -258,19 +408,21 @@ export class BridgeHost {
     const deltaX = screenX - this.panelDragStartX;
     const deltaY = screenY - this.panelDragStartY;
 
+    const margin = 10;
     const width = wrapper.offsetWidth;
     const height = wrapper.offsetHeight;
-    const maxX = window.innerWidth - width;
-    const maxY = window.innerHeight - height;
+    const maxX = window.innerWidth - width - margin;
+    const maxY = window.innerHeight - height - margin;
 
     let newX = this.panelStartX + deltaX;
     let newY = this.panelStartY + deltaY;
 
-    newX = Math.max(0, Math.min(maxX, newX));
-    newY = Math.max(0, Math.min(maxY, newY));
+    newX = Math.max(margin, Math.min(maxX, newX));
+    newY = Math.max(margin, Math.min(maxY, newY));
 
     wrapper.style.left = `${newX}px`;
     wrapper.style.top = `${newY}px`;
+    this.panelPosition = { x: newX, y: newY };
   }
 
   endPanelDrag() {
@@ -282,6 +434,90 @@ export class BridgeHost {
     }
 
     this.isPanelDragging = false;
+
+    if (this.panelPosition) {
+      this.savePanelPosition(this.panelPosition.x, this.panelPosition.y);
+    }
+
+    if (this.dragOverlay) {
+      this.dragOverlay.remove();
+      this.dragOverlay = null;
+    }
+  }
+
+  startResize(screenX, screenY) {
+    if (this.isMaximized) return;
+
+    const wrapper = this.iframeContainer?.querySelector('.bb-panel-wrapper');
+    if (!wrapper) return;
+
+    this.isResizing = true;
+    this.resizeStartX = screenX;
+    this.resizeStartY = screenY;
+    this.resizeStartWidth = wrapper.offsetWidth;
+    this.resizeStartHeight = wrapper.offsetHeight;
+
+    this.dragOverlay = document.createElement('div');
+    this.dragOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: ${CONFIG.FLOAT_BUTTON.zIndex + 1};
+      cursor: nwse-resize;
+    `;
+    this.dragOverlay.addEventListener('mousemove', (e) => this.updateResize(e.screenX, e.screenY));
+    this.dragOverlay.addEventListener('mouseup', () => this.endResize());
+    this.dragOverlay.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      this.updateResize(e.touches[0].screenX, e.touches[0].screenY);
+    }, { passive: false });
+    this.dragOverlay.addEventListener('touchend', () => this.endResize());
+    document.body.appendChild(this.dragOverlay);
+  }
+
+  updateResize(screenX, screenY) {
+    if (!this.isResizing) return;
+
+    const wrapper = this.iframeContainer?.querySelector('.bb-panel-wrapper');
+    if (!wrapper) return;
+
+    const deltaX = screenX - this.resizeStartX;
+    const deltaY = screenY - this.resizeStartY;
+
+    const minWidth = 360;
+    const minHeight = 480;
+    const maxWidth = window.innerWidth * 0.95;
+    const maxHeight = window.innerHeight * 0.9;
+
+    let newWidth = this.resizeStartWidth + deltaX;
+    let newHeight = this.resizeStartHeight + deltaY;
+
+    newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+    newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
+
+    wrapper.style.width = `${newWidth}px`;
+    wrapper.style.height = `${newHeight}px`;
+    wrapper.style.maxWidth = `${maxWidth}px`;
+    wrapper.style.maxHeight = `${maxHeight}px`;
+    wrapper.style.transform = 'none';
+    wrapper.style.left = '50%';
+    wrapper.style.top = '50%';
+    wrapper.style.marginLeft = `-${newWidth / 2}px`;
+    wrapper.style.marginTop = `-${newHeight / 2}px`;
+
+    this.panelSize = { width: newWidth, height: newHeight };
+  }
+
+  endResize() {
+    if (!this.isResizing) return;
+
+    this.isResizing = false;
+
+    if (this.panelSize) {
+      this.savePanelSize(this.panelSize.width, this.panelSize.height);
+    }
 
     if (this.dragOverlay) {
       this.dragOverlay.remove();
