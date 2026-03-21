@@ -20,6 +20,7 @@ export class BridgeHost {
     this.initialized = false;
     this.isMaximized = false;
     this.onPanelToggle = null;
+    this.onClose = null;
     this.boundHandleMessage = this.handleMessage.bind(this);
     this.boundHandleKeydown = this.handleKeydown.bind(this);
     this.isPanelDragging = false;
@@ -210,7 +211,10 @@ export class BridgeHost {
 
     this.isOpen = false;
 
-    // 通知浮动按钮显示
+    if (this.onClose) {
+      this.onClose();
+    }
+
     if (this.onPanelToggle) {
       this.onPanelToggle(false);
     }

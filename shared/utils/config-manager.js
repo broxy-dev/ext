@@ -1,3 +1,5 @@
+import { CONFIG, HTTP_URL } from '../config.js';
+
 export class ConfigManager {
   constructor() {
     this.routes = [];
@@ -22,6 +24,8 @@ export class ConfigManager {
   THEME_KEY = 'broxy_theme';
 
   LANGUAGE_KEY = 'broxy_language';
+
+  WEB_ID_KEY = 'broxy_web_id';
 
   load() {
     const routes = localStorage.getItem(this.ROUTES_KEY);
@@ -58,6 +62,31 @@ export class ConfigManager {
 
   getAllTools() {
     return this.tools;
+  }
+
+  getEnabledRoutes() {
+    return this.routes.filter(r => r.enabled);
+  }
+
+  getEnabledTools() {
+    return this.tools.filter(t => t.enabled);
+  }
+
+  getWebId() {
+    let webId = localStorage.getItem(this.WEB_ID_KEY);
+    if (!webId) {
+      webId = crypto.randomUUID();
+      localStorage.setItem(this.WEB_ID_KEY, webId);
+    }
+    return webId;
+  }
+
+  getApiUrl() {
+    return `${HTTP_URL}/api/${this.getWebId()}`;
+  }
+
+  getMcpUrl() {
+    return `${HTTP_URL}/mcp/${this.getWebId()}`;
   }
 
   saveRoutes() {

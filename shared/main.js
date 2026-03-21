@@ -6,6 +6,7 @@ import { handleRequest } from './core/request-handler.js';
 import { BridgeClient } from './core/bridge-client.js';
 import { FloatButton } from './bridge/float-button.js';
 import { BridgeHost } from './bridge/bridge-host.js';
+import { MiniPanel } from './bridge/mini-panel.js';
 
 // 全局单例锁
 if (window.__BROXY_INITIALIZED__) {
@@ -42,22 +43,31 @@ if (window.__BROXY_INITIALIZED__) {
 
     const webId = getWebId(CONFIG.WEB_ID_KEY);
 
-    // 创建浮动按钮
-    const floatButton = new FloatButton(() => {
-      bridgeHost.toggle();
-    });
-    floatButton.create();
+    const floatButton = new FloatButton(() => {});
 
-    // 创建 WebSocket 客户端
     const client = new BridgeClient(webId);
 
-    // 创建 Bridge Host（管理 iframe 通信）
     const bridgeHost = new BridgeHost(client, router);
 
-    // 设置面板切换回调（隐藏/显示浮动按钮）
-    bridgeHost.onPanelToggle = (isOpen) => {
-      floatButton.setPanelOpen(isOpen);
+    const miniPanel = new MiniPanel({
+      configManager: configManager,
+      client: client,
+      floatButton: floatButton,
+    });
+
+    floatButton.onClick = () => {
+      miniPanel.toggle();
     };
+
+    miniPanel.onDevMode = () => {
+      bridgeHost.open();
+    };
+
+    bridgeHost.onClose = () => {
+      miniPanel.show();
+    };
+
+    floatButton.create();
 
     // 设置请求处理器
     client.setRequestHandler(async (method, path, query, body, headers) => {
@@ -72,16 +82,14 @@ if (window.__BROXY_INITIALIZED__) {
       return result;
     });
 
-    // 设置状态更新回调
     client.setStatusCallback((status) => {
       floatButton.updateStatus(status);
+      miniPanel.updateStatus(status);
       bridgeHost.updateStatus(status);
 
-      // 保存连接状态（仅在真正连接成功或断开时）
       if (status === 'connected') {
         localStorage.setItem(CONFIG.CONNECTION_STATE_KEY, 'connected');
       } else if (status === 'disconnected') {
-        // 仅在非重连情况下保存断开状态
         if (!client.shouldConnect) {
           localStorage.setItem(CONFIG.CONNECTION_STATE_KEY, 'disconnected');
         }
@@ -93,13 +101,13 @@ if (window.__BROXY_INITIALIZED__) {
       bridgeHost.addSystemLog(type, action, message, details);
     });
 
-    // 暴露全局接口
     window.broxy = {
       webId: webId,
       client: client,
       router: router,
       bridgeHost: bridgeHost,
       floatButton: floatButton,
+      miniPanel: miniPanel,
       connect: () => {
         localStorage.setItem(CONFIG.CONNECTION_STATE_KEY, 'connected');
         client.connect();

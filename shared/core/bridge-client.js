@@ -14,6 +14,7 @@ export class BridgeClient {
     this.statusCallback = null;
     this.logCallback = null;
     this.connectedAt = null;
+    this.status = 'disconnected';
   }
 
   setRequestHandler(handler) {
@@ -54,6 +55,7 @@ export class BridgeClient {
         this.reconnectCount = 0;
         this.shouldConnect = true;
         this.connectedAt = Date.now();
+        this.status = 'connected';
         setConnectionState(CONFIG.CONNECTION_KEY, true);
         if (this.logCallback) {
           this.logCallback('connection', 'connected', 'WebSocket connected successfully');
@@ -77,6 +79,7 @@ export class BridgeClient {
         console.log('[Broxy] Connection closed', event.code, event.reason);
         const wasConnected = this.isConnected;
         this.isConnected = false;
+        this.status = wasConnected ? 'disconnected' : 'error';
 
         if (this.logCallback) {
           this.logCallback('connection', 'disconnected', `Connection closed (code: ${event.code})`, { code: event.code, reason: event.reason });
@@ -96,6 +99,7 @@ export class BridgeClient {
 
       this.ws.onerror = (error) => {
         console.error('[Broxy] WebSocket error:', error);
+        this.status = 'error';
         if (this.logCallback) {
           this.logCallback('connection', 'error', 'WebSocket connection error');
         }
@@ -117,6 +121,7 @@ export class BridgeClient {
   disconnect() {
     this.shouldConnect = false;
     this.connectedAt = null;
+    this.status = 'disconnected';
     setConnectionState(CONFIG.CONNECTION_KEY, false);
 
     // 标记用户主动断开
@@ -248,6 +253,7 @@ export class BridgeClient {
     if (this.reconnectCount >= CONFIG.MAX_RECONNECT) {
       console.error('[Broxy] Max reconnect attempts reached');
       this.shouldConnect = false;
+      this.status = 'failed';
       setConnectionState(CONFIG.CONNECTION_KEY, false);
       if (this.logCallback) {
         this.logCallback('connection', 'failed', 'Max reconnect attempts reached');
@@ -259,6 +265,7 @@ export class BridgeClient {
     }
 
     this.reconnectCount++;
+    this.status = 'reconnecting';
     console.log(`[Broxy] Reconnecting... (attempt ${this.reconnectCount})`);
     if (this.logCallback) {
       this.logCallback('connection', 'reconnecting', `Reconnecting... (attempt ${this.reconnectCount}/${CONFIG.MAX_RECONNECT})`);

@@ -1,4 +1,54 @@
-// 配置模块
+export const THEME = {
+  primary: {
+    start: '#3FC1C9',
+    end: '#1A868D',
+  },
+  status: {
+    connected: { start: '#4caf50', end: '#2e7d32' },
+    reconnecting: { start: '#ff9800', end: '#e65100' },
+    error: { start: '#f44336', end: '#b71c1c' },
+    failed: { start: '#f44336', end: '#b71c1c' },
+    disconnected: { start: '#9e9e9e', end: '#616161' },
+  },
+  text: {
+    primary: '#333',
+    secondary: '#666',
+    tertiary: '#888',
+    light: '#e0e0e0',
+  },
+  background: {
+    panel: 'rgba(255, 255, 255, 0.8)',
+    panelDark: 'rgba(26, 26, 46, 0.8)',
+    hover: '#e8e8e8',
+    hoverDark: '#3a3a5a',
+    hoverDarkAlt: '#4a4a6a',
+    input: 'rgba(0, 0, 0, 0.04)',
+    inputDark: 'rgba(42, 42, 74, 0.6)',
+  },
+  border: {
+    light: 'rgba(0, 0, 0, 0.1)',
+    section: 'rgba(0, 0, 0, 0.08)',
+    primary: 'rgba(63, 193, 201, 0.25)',
+    primaryLight: 'rgba(63, 193, 201, 0.15)',
+    input: 'rgba(0, 0, 0, 0.12)',
+    inputDark: 'rgba(63, 193, 201, 0.2)',
+  },
+  shadow: {
+    panel: '0 8px 32px rgba(0, 0, 0, 0.15)',
+    panelDark: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(63, 193, 201, 0.15)',
+    btn: '0 2px 8px rgba(0, 0, 0, 0.15)',
+    btnHover: '0 4px 12px rgba(63, 193, 201, 0.4)',
+    btnConnected: '0 4px 12px rgba(76, 175, 80, 0.4)',
+    inputFocus: '0 0 8px rgba(63, 193, 201, 0.3)',
+  },
+  toggle: {
+    on: '#3FC1C9',
+    off: '#ccc',
+    offDark: '#3a3a5a',
+    knobDark: '#888',
+  },
+};
+
 export const CONFIG = {
   // Cloudflare Worker 域名配置
   WORKER_DOMAIN: 'v1.broxy.dev',
@@ -19,6 +69,12 @@ export const CONFIG = {
     zIndex: 999999,
     defaultPosition: 'bottom-right',
     offset: 20,
+  },
+
+  MINI_PANEL: {
+    width: 320,
+    title: 'Broxy',
+    projectUrl: 'https://broxy.dev',
   },
 
   // 本地存储 key（添加当前域名前缀，避免跨域冲突）
