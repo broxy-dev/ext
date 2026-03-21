@@ -6,6 +6,7 @@
 // @author       broxy-dev
 // @icon         https://broxy.dev/assets/logo.png
 // @updateURL    https://broxy.dev/assets/broxy-v1.user.js
+// @downloadURL  https://broxy.dev/assets/broxy-v1.user.js
 // @match        https://*/*
 // @match        http://*/*
 // @run-at       document-end
@@ -40,12 +41,17 @@
       if (!window.__BROXY_INIT_DATA__) window.__BROXY_INIT_DATA__ = {{INIT_DATA}};
 
       // =====================================================
-      // Broxy Core Code
+      // Broxy Core Code (压缩版)
       // 由 npm run build 自动生成
-      // 打包来源: ext/src/main.js
+      // 打包来源: shared/main.js
       // 生成时间: {{BUILD_TIME}}
+      // 
+      // 如需查看源码，请访问:
+      // https://github.com/broxy-dev/broxy-ext/tree/main/shared/
       // =====================================================
+      /* CORE CODE START */
       {{CORE_CODE}}
+      /* CORE CODE END */
 
     } catch (error) {
       console.error('[Broxy] Failed to initialize:', error);

@@ -103,6 +103,7 @@ export class BridgeHost {
 
     this.applyContainerStyles();
     document.body.appendChild(this.iframeContainer);
+    this.updatePanelTheme();
 
     const wrapper = this.iframeContainer.querySelector('.bb-panel-wrapper');
     
@@ -341,6 +342,28 @@ export class BridgeHost {
       #broxy-panel .bb-panel-wrapper.bb-maximized .bb-resize-handle {
         display: none;
       }
+      #broxy-panel.bb-theme-dark .bb-panel-wrapper {
+        background: #1e1e1e;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      }
+      @media (prefers-color-scheme: dark) {
+        #broxy-panel:not(.bb-theme-light) .bb-panel-wrapper {
+          background: #1e1e1e;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+      }
+      #broxy-panel.bb-theme-dark .bb-resize-handle,
+      #broxy-panel.bb-theme-dark .bb-resize-handle:hover {
+        background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.2) 50%);
+      }
+      @media (prefers-color-scheme: dark) {
+        #broxy-panel:not(.bb-theme-light) .bb-resize-handle,
+        #broxy-panel:not(.bb-theme-light) .bb-resize-handle:hover {
+          background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.2) 50%);
+        }
+      }
       @keyframes bb-fadeIn {
         from { opacity: 0; }
         to { opacity: 1; }
@@ -355,6 +378,20 @@ export class BridgeHost {
   handleKeydown(e) {
     if (e.key === 'Escape' && this.isOpen) {
       this.close();
+    }
+  }
+
+  updatePanelTheme() {
+    const panel = document.querySelector('#broxy-panel');
+    if (!panel) return;
+    
+    const theme = this.configManager.getTheme();
+    panel.classList.remove('bb-theme-light', 'bb-theme-dark');
+    
+    if (theme === 'light') {
+      panel.classList.add('bb-theme-light');
+    } else if (theme === 'dark') {
+      panel.classList.add('bb-theme-dark');
     }
   }
 
@@ -736,6 +773,7 @@ export class BridgeHost {
         if (data.theme !== undefined) {
           this.configManager.setTheme(data.theme);
         }
+        this.updatePanelTheme();
         this.sendToIframe('themeChange', {
           theme: this.configManager.getTheme(),
         });
@@ -758,6 +796,7 @@ export class BridgeHost {
       case 'importData':
         this.configManager.importAllData(data);
         this.reloadRoutes();
+        this.updatePanelTheme();
         this.sendToIframe('routesChange', this.configManager.getAllRoutes());
         this.sendToIframe('toolsChange', this.configManager.getAllTools());
         this.sendToIframe('authChange', {
