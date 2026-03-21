@@ -47,6 +47,21 @@ export class ConfigManager {
         if (initData.data.initScript) {
           this.setInitScript(initData.data.initScript);
         }
+        if (initData.data.skillConfig) {
+          this.setSkillConfig(initData.data.skillConfig);
+        }
+        if (initData.data.authToken !== undefined) {
+          this.setAuthToken(initData.data.authToken);
+        }
+        if (initData.data.authEnabled !== undefined) {
+          this.setAuthEnabled(initData.data.authEnabled);
+        }
+        if (initData.data.theme !== undefined) {
+          this.setTheme(initData.data.theme);
+        }
+        if (initData.data.language !== undefined) {
+          this.setLanguage(initData.data.language);
+        }
         this.saveRoutes();
         this.saveTools();
       }
