@@ -1,5 +1,56 @@
 import { CONFIG, THEME } from '../config.js';
 
+const translations = {
+  'zh-CN': {
+    service: '服务',
+    version: '版本',
+    status: '状态',
+    disconnected: '未连接',
+    start: '启动',
+    stop: '停止',
+    apiAddress: 'API 地址',
+    mcpAddress: 'MCP 地址',
+    copy: '复制',
+    copied: '已复制',
+    authToken: '认证令牌',
+    authToggleTitle: '开启后连接时携带认证令牌',
+    authTokenPlaceholder: '输入认证令牌',
+    generate: '生成',
+    devMode: '开发模式',
+    started: '已启动',
+    restarting: '重启服务中...',
+    connectionError: '连接错误',
+    connectionFailed: '连接失败',
+    notStarted: '未启动',
+    stopping: '停止中',
+    starting: '启动中',
+  },
+  en: {
+    service: 'Service',
+    version: 'Version',
+    status: 'Status',
+    disconnected: 'Disconnected',
+    start: 'Start',
+    stop: 'Stop',
+    apiAddress: 'API Address',
+    mcpAddress: 'MCP Address',
+    copy: 'Copy',
+    copied: 'Copied',
+    authToken: 'Auth Token',
+    authToggleTitle: 'Include auth token when connecting',
+    authTokenPlaceholder: 'Enter auth token',
+    generate: 'Generate',
+    devMode: 'Dev Mode',
+    started: 'Started',
+    restarting: 'Restarting...',
+    connectionError: 'Connection Error',
+    connectionFailed: 'Connection Failed',
+    notStarted: 'Not Started',
+    stopping: 'Stopping',
+    starting: 'Starting',
+  },
+};
+
 export class MiniPanel {
   constructor(options) {
     this.configManager = options.configManager;
@@ -17,6 +68,17 @@ export class MiniPanel {
     this.isConnecting = false;
     this.onDevMode = null;
     this.boundHandleKeydown = this.handleKeydown.bind(this);
+  }
+
+  getCurrentLang() {
+    const stored = this.configManager.getLanguage();
+    if (stored) return stored;
+    return navigator.language.startsWith('zh') ? 'zh-CN' : 'en';
+  }
+
+  t(key) {
+    const lang = this.getCurrentLang();
+    return translations[lang]?.[key] || translations['en'][key] || key;
   }
 
   create() {
@@ -59,56 +121,56 @@ export class MiniPanel {
         <div class="bb-mini-section bb-mini-service-section">
           <div class="bb-mini-service-info">
             <div class="bb-mini-row">
-              <span class="bb-mini-label">服务</span>
+              <span class="bb-mini-label">${this.t('service')}</span>
               <span class="bb-mini-value">${mcpConfig.name}</span>
             </div>
             <div class="bb-mini-row">
-              <span class="bb-mini-label">版本</span>
+              <span class="bb-mini-label">${this.t('version')}</span>
               <span class="bb-mini-value">${mcpConfig.version}</span>
             </div>
             <div class="bb-mini-row">
-              <span class="bb-mini-label">状态</span>
+              <span class="bb-mini-label">${this.t('status')}</span>
               <span class="bb-mini-value">
                 <span class="bb-mini-status-dot" id="bb-mini-status-dot"></span>
-                <span id="bb-mini-status-text">未连接</span>
+                <span id="bb-mini-status-text">${this.t('disconnected')}</span>
               </span>
             </div>
           </div>
           <button class="bb-mini-circle-btn" id="bb-mini-connect-btn">
-            <span class="bb-mini-btn-text">启动</span>
+            <span class="bb-mini-btn-text">${this.t('start')}</span>
             <span class="bb-mini-btn-spinner"></span>
           </button>
         </div>
         <div class="bb-mini-section">
           <div class="bb-mini-row">
-            <span class="bb-mini-label">API 地址</span>
+            <span class="bb-mini-label">${this.t('apiAddress')}</span>
             <span class="bb-mini-badge" id="bb-mini-routes-badge">${routesCount}</span>
           </div>
           <div class="bb-mini-row">
             <input type="text" class="bb-mini-input bb-mini-url-input" id="bb-mini-api-url" value="${apiUrl}" readonly>
-            <button class="bb-mini-btn bb-mini-btn-sm bb-mini-copy-btn" data-url="${apiUrl}">复制</button>
+            <button class="bb-mini-btn bb-mini-btn-sm bb-mini-copy-btn" data-url="${apiUrl}">${this.t('copy')}</button>
           </div>
           <div class="bb-mini-row">
-            <span class="bb-mini-label">MCP 地址</span>
+            <span class="bb-mini-label">${this.t('mcpAddress')}</span>
             <span class="bb-mini-badge" id="bb-mini-tools-badge">${toolsCount}</span>
           </div>
           <div class="bb-mini-row">
             <input type="text" class="bb-mini-input bb-mini-url-input" id="bb-mini-mcp-url" value="${mcpUrl}" readonly>
-            <button class="bb-mini-btn bb-mini-btn-sm bb-mini-copy-btn" data-url="${mcpUrl}">复制</button>
+            <button class="bb-mini-btn bb-mini-btn-sm bb-mini-copy-btn" data-url="${mcpUrl}">${this.t('copy')}</button>
           </div>
         </div>
         <div class="bb-mini-section">
           <div class="bb-mini-row">
-            <span class="bb-mini-label">认证令牌</span>
-            <label class="bb-mini-toggle bb-mini-toggle-sm" title="开启后连接时携带认证令牌">
+            <span class="bb-mini-label">${this.t('authToken')}</span>
+            <label class="bb-mini-toggle bb-mini-toggle-sm" title="${this.t('authToggleTitle')}">
               <input type="checkbox" id="bb-mini-auth-toggle" ${authEnabled ? 'checked' : ''}>
               <span class="bb-mini-toggle-slider"></span>
             </label>
           </div>
           <div class="bb-mini-row">
             <input type="text" class="bb-mini-input" id="bb-mini-token-input" 
-                   value="${authToken}" placeholder="输入认证令牌">
-            <button class="bb-mini-btn bb-mini-btn-sm" id="bb-mini-gen-token-btn">生成</button>
+                   value="${authToken}" placeholder="${this.t('authTokenPlaceholder')}">
+            <button class="bb-mini-btn bb-mini-btn-sm" id="bb-mini-gen-token-btn">${this.t('generate')}</button>
           </div>
         </div>
         <div class="bb-mini-section bb-mini-dev-section">
@@ -116,7 +178,7 @@ export class MiniPanel {
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
               <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
             </svg>
-            开发模式
+            ${this.t('devMode')}
           </button>
         </div>
       </div>
@@ -575,7 +637,7 @@ export class MiniPanel {
         try {
           await navigator.clipboard.writeText(url);
           const originalText = btn.textContent;
-          btn.textContent = '已复制';
+          btn.textContent = this.t('copied');
           setTimeout(() => {
             btn.textContent = originalText;
           }, 1500);
@@ -724,11 +786,11 @@ export class MiniPanel {
     const btnTextEl = connectBtn.querySelector('.bb-mini-btn-text');
 
     const statusMap = {
-      connected: { text: '已启动', dotClass: 'connected', btnText: '停止', btnClass: 'bb-mini-connected bb-mini-stop' },
-      reconnecting: { text: '重启服务中...', dotClass: 'reconnecting', btnText: '停止', btnClass: 'bb-mini-connected bb-mini-stop' },
-      error: { text: '连接错误', dotClass: 'error', btnText: '启动', btnClass: '' },
-      failed: { text: '连接失败', dotClass: 'failed', btnText: '启动', btnClass: '' },
-      disconnected: { text: '未启动', dotClass: '', btnText: '启动', btnClass: '' },
+      connected: { text: this.t('started'), dotClass: 'connected', btnText: this.t('stop'), btnClass: 'bb-mini-connected bb-mini-stop' },
+      reconnecting: { text: this.t('restarting'), dotClass: 'reconnecting', btnText: this.t('stop'), btnClass: 'bb-mini-connected bb-mini-stop' },
+      error: { text: this.t('connectionError'), dotClass: 'error', btnText: this.t('start'), btnClass: '' },
+      failed: { text: this.t('connectionFailed'), dotClass: 'failed', btnText: this.t('start'), btnClass: '' },
+      disconnected: { text: this.t('notStarted'), dotClass: '', btnText: this.t('start'), btnClass: '' },
     };
 
     const info = statusMap[status] || statusMap.disconnected;
@@ -752,7 +814,7 @@ export class MiniPanel {
       connectBtn.classList.add('bb-mini-btn-loading');
       connectBtn.disabled = true;
       if (btnTextEl) {
-        btnTextEl.textContent = this.status === 'connected' || this.status === 'reconnecting' ? '停止中' : '启动中';
+        btnTextEl.textContent = this.status === 'connected' || this.status === 'reconnecting' ? this.t('stopping') : this.t('starting');
       }
     } else {
       connectBtn.classList.remove('bb-mini-btn-loading');
